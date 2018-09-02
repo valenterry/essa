@@ -14,7 +14,7 @@ object EssaTests extends TestSuite {
       case class A()
       case class B()
 
-      val testee = A()
+      val testee    = A()
       val result: B = convert[B](testee)
       success
     }
@@ -23,7 +23,7 @@ object EssaTests extends TestSuite {
       case class A(a: String)
       case class B(a: String)
 
-      val field = "hi"
+      val field     = "hi"
       val result: B = convert[B](A("hi"))
       assert(result == B(field))
     }
@@ -32,8 +32,8 @@ object EssaTests extends TestSuite {
       case class A(a: String, b: Double)
       case class B(a: String, b: Double)
 
-      val field1 = "hi"
-      val field2 = 42.2
+      val field1    = "hi"
+      val field2    = 42.2
       val result: B = convert[B](A(field1, field2))
       assert(result == B(field1, field2))
     }
