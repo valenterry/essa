@@ -22,7 +22,7 @@ trait LowPriorityNestedGeneric {
       type Out = OT[In, In]
       def apply(in: In): Out           = in.asInstanceOf[OT[In, In]]
       override def to(in: In)          = apply(in)
-      override def from(out: Out): Int = out.asInstanceOf[In]
+      override def from(out: Out): In = out.asInstanceOf[In]
     }
   }
 }
