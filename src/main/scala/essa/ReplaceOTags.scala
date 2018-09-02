@@ -50,7 +50,7 @@ object ReplaceOTags extends LowPriorityReplaceOTypes {
 //A is the original type, tagged into the NG of A (called ANG)
 //B is the Target type, which a shall be replaced with
 object changeNGAtoNGB extends Poly1 {
-  implicit def default[Aggr <: HList, A, AAndBKey <: Symbol, ANG, BNG, B](implicit replacer: Lazy[ReplaceOTags.Aux[A, ANG, B, OT[B, BNG]]])
+  implicit def default[A, AAndBKey <: Symbol, ANG, BNG, B](implicit replacer: Lazy[ReplaceOTags.Aux[A, ANG, B, OT[B, BNG]]])
     : Case.Aux[(OT[A, FieldType[AAndBKey, ANG]], FieldType[AAndBKey, B]), OT[B, FieldType[AAndBKey, BNG]]] =
     at { next: (OT[A, FieldType[AAndBKey, ANG]], FieldType[AAndBKey, B]) =>
       val converted: OT[B, FieldType[AAndBKey, BNG]] =
