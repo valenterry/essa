@@ -41,16 +41,16 @@ object NestedGeneric extends LowPriorityNestedGeneric {
     }
 
   implicit def hcons[In, InLG <: HList, Result <: HList](implicit lgen: LabelledGeneric.Aux[In, InLG],
-                                                         nestedFolder: Lazy[Mapper.Aux[nestTransform.type, InLG, Result]],
-                                                         unnestFolder: Lazy[Mapper.Aux[unnestTransform.type, Result, InLG]]): Aux[In, OT[In, Result]] =
+                                                         nestMapper: Lazy[Mapper.Aux[nestTransform.type, InLG, Result]],
+                                                         unnestMapper: Lazy[Mapper.Aux[unnestTransform.type, Result, InLG]]): Aux[In, OT[In, Result]] =
     new NestedGeneric[In] {
       type Out = OT[In, Result]
       def apply(in: In): Out = {
         val inLG: InLG = lgen.to(in)
-        nestedFolder.value.apply(inLG).asInstanceOf[OT[In, Result]]
+        nestMapper.value.apply(inLG).asInstanceOf[OT[In, Result]]
       }
       override def to(in: In): Out    = apply(in)
-      override def from(out: Out): In = lgen.from(unnestFolder.value.apply(out))
+      override def from(out: Out): In = lgen.from(unnestMapper.value.apply(out))
     }
 }
 
