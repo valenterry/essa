@@ -2,6 +2,7 @@
 Blacksmithing for Scala.
 Essa helps with transformations between types, e.g. case classes or sealed traits - without macros or reflection.
 
+
 ## Usage
 
 ```scala
