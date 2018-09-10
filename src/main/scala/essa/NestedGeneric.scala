@@ -1,27 +1,24 @@
 package essa
 
 import shapeless.labelled.FieldType
-import shapeless.ops.hlist.Mapper
 import OTagged.OT
-import shapeless.{DepFn1, HList, HNil, LabelledGeneric, Lazy, Poly1}
-import util.NotLabelledGeneric
+import shapeless._
 
 /**
   * Provides a generic representation, recursively for each field of every generic type and otherwise the type itself
   */
 trait NestedGeneric[In] extends DepFn1[In] with Serializable {
-  def to(in: In): Out
+  def to(in: In): Out = apply(in)
   def from(out: Out): In
 }
 
 trait LowPriorityNestedGeneric {
   type Aux[In, Out0] = NestedGeneric[In] { type Out = Out0 }
 
-  implicit def notGeneric[In](implicit ev: NotLabelledGeneric[In]): Aux[In, OT[In, In]] = {
+  implicit def notGeneric[In]: Aux[In, OT[In, In]] = {
     new NestedGeneric[In] {
       type Out = OT[In, In]
-      def apply(in: In): Out           = in.asInstanceOf[OT[In, In]]
-      override def to(in: In)          = apply(in)
+      override def apply(in: In): Out = in.asInstanceOf[OT[In, In]]
       override def from(out: Out): In = out.asInstanceOf[In]
     }
   }
@@ -32,46 +29,69 @@ object NestedGeneric extends LowPriorityNestedGeneric {
 
   override type Aux[In, Out0] = NestedGeneric[In] { type Out = Out0 }
 
-  implicit def hnil[In](implicit ev: LabelledGeneric.Aux[In, HNil]): Aux[In, OT[In, HNil]] =
+  implicit def hnil: Aux[HNil, HNil] =
+    new NestedGeneric[HNil] {
+      type Out = HNil
+      override def apply(in: HNil): Out = HNil
+      override def from(out: Out): HNil = HNil
+    }
+
+  implicit def hcons[HeadKey <: Symbol, HeadValue, Tail <: HList, HeadValueNG, TailNG <: HList](
+      implicit
+      ngHead: NestedGeneric.Aux[HeadValue, HeadValueNG],
+      ngTail: NestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :: Tail, FieldType[HeadKey, HeadValueNG] :: TailNG] =
+    new NestedGeneric[FieldType[HeadKey, HeadValue] :: Tail] {
+      type Out = FieldType[HeadKey, HeadValueNG] :: TailNG
+      override def apply(in: FieldType[HeadKey, HeadValue] :: Tail): Out = ngHead(in.head).asInstanceOf[FieldType[HeadKey, HeadValueNG]] :: ngTail(in.tail)
+      override def from(out: Out): FieldType[HeadKey, HeadValue] :: Tail =
+        ngHead.from(out.head).asInstanceOf[FieldType[HeadKey, HeadValue]] :: ngTail.from(out.tail)
+    }
+
+  implicit def cnil: Aux[CNil, CNil] =
+    new NestedGeneric[CNil] {
+      type Out = CNil
+      def apply(in: CNil): Out          = unexpected
+      override def from(out: Out): CNil = unexpected
+    }
+
+  implicit def ccons[HeadKey <: Symbol, HeadValue, Tail <: Coproduct, HeadValueNG, TailNG <: Coproduct](
+      implicit
+      ngHead: NestedGeneric.Aux[HeadValue, HeadValueNG],
+      ngTail: NestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :+: Tail, FieldType[HeadKey, HeadValueNG] :+: TailNG] =
+    new NestedGeneric[FieldType[HeadKey, HeadValue] :+: Tail] {
+      type Out = FieldType[HeadKey, HeadValueNG] :+: TailNG
+      def apply(in: FieldType[HeadKey, HeadValue] :+: Tail): Out =
+        in.eliminate(l => Inl(ngHead.apply(l).asInstanceOf[FieldType[HeadKey, HeadValueNG]]), r => Inr(ngTail.apply(r)))
+      override def from(out: Out): FieldType[HeadKey, HeadValue] :+: Tail =
+        out.eliminate(l => Inl(ngHead.from(l).asInstanceOf[FieldType[HeadKey, HeadValue]]), r => Inr(ngTail.from(r)))
+    }
+
+  implicit def deriveForNonEmptyProduct[In, InLGHead, InLGTail <: HList, InNG <: HList](
+      implicit
+      lgen: Lazy[LabelledGeneric.Aux[In, InLGHead :: InLGTail]],
+      ngen: Lazy[NestedGeneric.Aux[InLGHead :: InLGTail, InNG]]
+  ): Aux[In, OT[In, InNG]] =
+    new NestedGeneric[In] {
+      type Out = OT[In, InNG]
+      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in)).asInstanceOf[OT[In, InNG]]
+      override def from(out: Out): In = lgen.value.from(ngen.value.from(out))
+    }
+
+  implicit def deriveForEmptyProduct[In](implicit lgen: LabelledGeneric.Aux[In, HNil]): Aux[In, OT[In, HNil]] =
     new NestedGeneric[In] {
       type Out = OT[In, HNil]
-      def apply(in: In): Out          = HNil.asInstanceOf[OT[In, HNil]]
-      override def from(out: Out): In = ev.from(out)
-      override def to(in: In): Out    = apply(in)
+      def apply(in: In): Out          = HNil.asInstanceOf[Out]
+      override def from(out: Out): In = lgen.from(HNil.asInstanceOf[Out])
     }
 
-  implicit def hcons[In, InLG <: HList, Result <: HList](implicit lgen: LabelledGeneric.Aux[In, InLG],
-                                                         nestMapper: Lazy[Mapper.Aux[nestTransform.type, InLG, Result]],
-                                                         unnestMapper: Lazy[Mapper.Aux[unnestTransform.type, Result, InLG]]): Aux[In, OT[In, Result]] =
+  implicit def deriveForNonEmptyCoproduct[In, InLG <: Coproduct, InNG <: Coproduct](
+      implicit
+      lgen: Lazy[LabelledGeneric.Aux[In, InLG]],
+      ngen: Lazy[NestedGeneric.Aux[InLG, InNG]]
+  ): Aux[In, OT[In, InNG]] =
     new NestedGeneric[In] {
-      type Out = OT[In, Result]
-      def apply(in: In): Out = {
-        val inLG: InLG = lgen.to(in)
-        nestMapper.value.apply(inLG).asInstanceOf[OT[In, Result]]
-      }
-      override def to(in: In): Out    = apply(in)
-      override def from(out: Out): In = lgen.from(unnestMapper.value.apply(out))
-    }
-}
-
-object nestTransform extends Poly1 {
-  implicit def default[Aggr <: HList, FieldKey <: Symbol, NextType, NextEntryNG](
-      implicit
-      nestedGeneric: Lazy[NestedGeneric.Aux[NextType, OT[NextType, NextEntryNG]]])
-    : Case.Aux[FieldType[FieldKey, NextType], OT[NextType, FieldType[FieldKey, NextEntryNG]]] =
-    at { nextEntry: FieldType[FieldKey, NextType] =>
-      val ngResult = nestedGeneric.value(nextEntry: NextType)
-      ngResult.asInstanceOf[OT[NextType, FieldType[FieldKey, NextEntryNG]]]
-    }
-}
-
-object unnestTransform extends Poly1 {
-  implicit def default[Orig, Aggr <: HList, NextEntryNG, FieldKey <: Symbol](
-      implicit
-      nestedGeneric: Lazy[NestedGeneric.Aux[Orig, OT[Orig, NextEntryNG]]]): Case.Aux[OT[Orig, FieldType[FieldKey, NextEntryNG]], FieldType[FieldKey, Orig]] =
-    at { nextEntry: OT[Orig, FieldType[FieldKey, NextEntryNG]] =>
-      nestedGeneric.value
-        .from(nextEntry)
-        .asInstanceOf[FieldType[FieldKey, Orig]]
+      type Out = OT[In, InNG]
+      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in)).asInstanceOf[OT[In, InNG]]
+      override def from(out: Out): In = lgen.value.from(ngen.value.from(out))
     }
 }

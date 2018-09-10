@@ -18,7 +18,7 @@ val b: B = convert[B](A(42, "essa"))
 
 - Convert non-nested product types
 - Convert arbitrary nested product types
-- TODO: Sumtype support
+- Sumtype support
 - TODO: Fields order
 - TODO: Better error messages
 - TODO: General type conversion
@@ -27,3 +27,4 @@ val b: B = convert[B](A(42, "essa"))
 - TODO: Primitive type to Tagged type / value class conversion
 - TODO: Enum support
 - TODO: Replace typetagging via .isInstanceOf by shapeless type tagging  
+- TODO: Support for recursivly defined sumtypes
