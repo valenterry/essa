@@ -1,7 +1,6 @@
 package essa
 
 import shapeless.labelled.FieldType
-import OTagged.OT
 import shapeless._
 
 /**
@@ -15,11 +14,11 @@ trait NestedGeneric[In] extends DepFn1[In] with Serializable {
 trait LowPriorityNestedGeneric {
   type Aux[In, Out0] = NestedGeneric[In] { type Out = Out0 }
 
-  implicit def notGeneric[In]: Aux[In, OT[In, In]] = {
+  implicit def notGeneric[In]: Aux[In, In] = {
     new NestedGeneric[In] {
-      type Out = OT[In, In]
-      override def apply(in: In): Out = in.asInstanceOf[OT[In, In]]
-      override def from(out: Out): In = out.asInstanceOf[In]
+      type Out = In
+      override def apply(in: In): Out = in
+      override def from(out: Out): In = out
     }
   }
 }
@@ -70,28 +69,28 @@ object NestedGeneric extends LowPriorityNestedGeneric {
       implicit
       lgen: Lazy[LabelledGeneric.Aux[In, InLGHead :: InLGTail]],
       ngen: Lazy[NestedGeneric.Aux[InLGHead :: InLGTail, InNG]]
-  ): Aux[In, OT[In, InNG]] =
+  ): Aux[In, InNG] =
     new NestedGeneric[In] {
-      type Out = OT[In, InNG]
-      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in)).asInstanceOf[OT[In, InNG]]
+      type Out = InNG
+      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in))
       override def from(out: Out): In = lgen.value.from(ngen.value.from(out))
     }
 
-  implicit def deriveForEmptyProduct[In](implicit lgen: LabelledGeneric.Aux[In, HNil]): Aux[In, OT[In, HNil]] =
+  implicit def deriveForEmptyProduct[In](implicit lgen: LabelledGeneric.Aux[In, HNil]): Aux[In, HNil] =
     new NestedGeneric[In] {
-      type Out = OT[In, HNil]
-      def apply(in: In): Out          = HNil.asInstanceOf[Out]
-      override def from(out: Out): In = lgen.from(HNil.asInstanceOf[Out])
+      type Out = HNil
+      def apply(in: In): Out          = HNil
+      override def from(out: Out): In = lgen.from(out)
     }
 
   implicit def deriveForNonEmptyCoproduct[In, InLG <: Coproduct, InNG <: Coproduct](
       implicit
       lgen: Lazy[LabelledGeneric.Aux[In, InLG]],
       ngen: Lazy[NestedGeneric.Aux[InLG, InNG]]
-  ): Aux[In, OT[In, InNG]] =
+  ): Aux[In, InNG] =
     new NestedGeneric[In] {
-      type Out = OT[In, InNG]
-      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in)).asInstanceOf[OT[In, InNG]]
+      type Out = InNG
+      def apply(in: In): Out          = ngen.value.apply(lgen.value.to(in))
       override def from(out: Out): In = lgen.value.from(ngen.value.from(out))
     }
 }
