@@ -11,7 +11,7 @@ trait LabelledNestedGeneric[In] extends DepFn1[In] with Serializable {
   def from(out: Out): In
 }
 
-trait LowPriorityNestedGeneric {
+trait LowPriorityLabelledNestedGeneric {
   type Aux[In, Out0] = LabelledNestedGeneric[In] { type Out = Out0 }
 
   implicit def notGeneric[In]: Aux[In, In] = {
@@ -23,7 +23,7 @@ trait LowPriorityNestedGeneric {
   }
 }
 
-object LabelledNestedGeneric extends LowPriorityNestedGeneric {
+object LabelledNestedGeneric extends LowPriorityLabelledNestedGeneric {
   def apply[In](implicit lngen: LabelledNestedGeneric[In]): Aux[In, lngen.Out] = lngen
 
   override type Aux[In, Out0] = LabelledNestedGeneric[In] { type Out = Out0 }
