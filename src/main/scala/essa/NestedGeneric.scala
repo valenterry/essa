@@ -34,9 +34,11 @@ object NestedGeneric extends LowPriorityNestedGeneric {
       override def from(out: Out): HNil = HNil
     }
 
-  implicit def hcons[Head, Tail <: HList, HeadNG, TailNG <: HList](implicit
-                                                                   ngHead: NestedGeneric.Aux[Head, HeadNG],
-                                                                   ngTail: NestedGeneric.Aux[Tail, TailNG]): Aux[Head :: Tail, HeadNG :: TailNG] =
+  implicit def hcons[Head, Tail <: HList, HeadNG, TailNG <: HList](
+      implicit
+      ngHead: NestedGeneric.Aux[Head, HeadNG],
+      ngTail: NestedGeneric.Aux[Tail, TailNG]
+  ): Aux[Head :: Tail, HeadNG :: TailNG] =
     new NestedGeneric[Head :: Tail] {
       type Out = HeadNG :: TailNG
       override def apply(in: Head :: Tail): Out = ngHead(in.head) :: ngTail(in.tail)
