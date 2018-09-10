@@ -36,9 +36,9 @@ object LabelledNestedGeneric extends LowPriorityNestedGeneric {
     }
 
   implicit def hcons[HeadKey <: Symbol, HeadValue, Tail <: HList, HeadValueNG, TailNG <: HList](
-                                                                                                 implicit
-                                                                                                 ngHead: LabelledNestedGeneric.Aux[HeadValue, HeadValueNG],
-                                                                                                 ngTail: LabelledNestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :: Tail, FieldType[HeadKey, HeadValueNG] :: TailNG] =
+      implicit
+      ngHead: LabelledNestedGeneric.Aux[HeadValue, HeadValueNG],
+      ngTail: LabelledNestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :: Tail, FieldType[HeadKey, HeadValueNG] :: TailNG] =
     new LabelledNestedGeneric[FieldType[HeadKey, HeadValue] :: Tail] {
       type Out = FieldType[HeadKey, HeadValueNG] :: TailNG
       override def apply(in: FieldType[HeadKey, HeadValue] :: Tail): Out = ngHead(in.head).asInstanceOf[FieldType[HeadKey, HeadValueNG]] :: ngTail(in.tail)
@@ -54,9 +54,9 @@ object LabelledNestedGeneric extends LowPriorityNestedGeneric {
     }
 
   implicit def ccons[HeadKey <: Symbol, HeadValue, Tail <: Coproduct, HeadValueNG, TailNG <: Coproduct](
-                                                                                                         implicit
-                                                                                                         ngHead: LabelledNestedGeneric.Aux[HeadValue, HeadValueNG],
-                                                                                                         ngTail: LabelledNestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :+: Tail, FieldType[HeadKey, HeadValueNG] :+: TailNG] =
+      implicit
+      ngHead: LabelledNestedGeneric.Aux[HeadValue, HeadValueNG],
+      ngTail: LabelledNestedGeneric.Aux[Tail, TailNG]): Aux[FieldType[HeadKey, HeadValue] :+: Tail, FieldType[HeadKey, HeadValueNG] :+: TailNG] =
     new LabelledNestedGeneric[FieldType[HeadKey, HeadValue] :+: Tail] {
       type Out = FieldType[HeadKey, HeadValueNG] :+: TailNG
       def apply(in: FieldType[HeadKey, HeadValue] :+: Tail): Out =
