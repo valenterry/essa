@@ -59,7 +59,7 @@ object AlignRecursive extends LowPriorityRecursiveAlign {
   implicit def cnil: Aux[CNil, CNil, CNil] =
     new AlignRecursive[CNil, CNil] {
       type Out = CNil
-      override def apply(in: CNil): Out = unexpected
+      override def apply(in: CNil): Out = in.impossible
     }
 
   implicit def ccons[OriginAndTargetHeadKey <: Symbol,

@@ -49,8 +49,8 @@ object LabelledNestedGeneric extends LowPriorityLabelledNestedGeneric {
   implicit def cnil: Aux[CNil, CNil] =
     new LabelledNestedGeneric[CNil] {
       type Out = CNil
-      def apply(in: CNil): Out          = unexpected
-      override def from(out: Out): CNil = unexpected
+      def apply(in: CNil): Out          = in.impossible
+      override def from(out: Out): CNil = out.impossible
     }
 
   implicit def ccons[HeadKey <: Symbol, HeadValue, Tail <: Coproduct, HeadValueNG, TailNG <: Coproduct](
