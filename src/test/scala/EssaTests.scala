@@ -1,5 +1,5 @@
-import essa.NestedGeneric
-import essa.essa.convert
+import essa.LabelledNestedGeneric
+import essa.essa._
 import shapeless._
 import utest._
 
@@ -207,7 +207,7 @@ object EssaTests extends TestSuite {
 
       val hlist            = Origin.B() :: HNil
       val testee: Origin.A = Origin.A(hlist)
-      val testeeNG         = NestedGeneric[Origin.A].apply(testee)
+      val testeeNG         = LabelledNestedGeneric[Origin.A].apply(testee)
       val expectedNG       = hlist :: HNil
       assert(testeeNG == expectedNG)
       compileError("convert[Target.A](testee)")
@@ -225,10 +225,72 @@ object EssaTests extends TestSuite {
 
       val coproduct            = Inl(Origin.B())
       val testee: Origin.A = Origin.A(coproduct)
-      val testeeNG         = NestedGeneric[Origin.A].apply(testee)
+      val testeeNG         = LabelledNestedGeneric[Origin.A].apply(testee)
       val expectedNG       = coproduct :: HNil
       assert(testeeNG == expectedNG)
       compileError("convert[Target.A](testee)")
+    }
+    "Conversion between product types with same fields but different field order" - {
+      object Origin {
+        case class Inner1(a: Double, b: Float, c: Inner2)
+        case class Inner2()
+        case class A(a: Int, b: Inner1)
+        case class Outer(s: A, b: Boolean)
+      }
+
+      object Target {
+        case class Inner1(c: Inner2, b: Float, a: Double)
+        case class Inner2()
+        case class A(b: Inner1, a: Int)
+        case class Outer(b: Boolean, s: A)
+      }
+
+      val testee: Origin.Outer   = Origin.Outer(Origin.A(42, Origin.Inner1(1.2, 3.4F, Origin.Inner2())), true)
+      val expected: Target.Outer = Target.Outer(true, Target.A(Target.Inner1(Target.Inner2(), 3.4F, 1.2), 42))
+      val result: Target.Outer   = convertReorder[Target.Outer](testee)
+      assert(result == expected)
+    }
+    "Conversion between sum types containing product types with same fields but different field order" - {
+      object Origin {
+        sealed trait S
+          case class A(a: Int, b: String) extends S
+          case class B(a: String, b: Int, c: Boolean) extends S
+      }
+
+      object Target {
+        sealed trait S
+          case class B(b: Int, c: Boolean, a: String) extends S
+          case class A(b: String, a: Int) extends S
+      }
+
+      val testee: Origin.S   = Origin.A(42, "essa")
+      val expected: Target.S = Target.A("essa", 42)
+      val result: Target.S   = convertReorder[Target.S](testee)
+      assert(result == expected)
+    }
+    "Conversion between mix of sum types and product types with same fields but different field order" - {
+      object Origin {
+        case class Inner1(a: Double, b: Float, c: Inner2)
+        case class Inner2()
+        sealed trait S
+          case class A(a: Int, b: Inner1) extends S
+          case class B(a: String, b: Inner2) extends S
+        case class Outer(s: S, b: Boolean)
+      }
+
+      object Target {
+        case class Inner1(c: Inner2, b: Float, a: Double)
+        case class Inner2()
+        sealed trait S
+          case class B(b: Inner2, a: String) extends S
+          case class A(b: Inner1, a: Int) extends S
+        case class Outer(b: Boolean, s: S)
+      }
+
+      val testee: Origin.Outer = Origin.Outer(Origin.A(42, Origin.Inner1(1.2, 3.4F, Origin.Inner2())), true)
+      val expected: Target.Outer = Target.Outer(true, Target.A(Target.Inner1(Target.Inner2(), 3.4F, 1.2), 42))
+      val result: Target.Outer = convertReorder[Target.Outer](testee)
+      assert(result == expected)
     }
   }
 }

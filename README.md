@@ -19,12 +19,13 @@ val b: B = convert[B](A(42, "essa"))
 - Convert non-nested product types
 - Convert arbitrary nested product types
 - Sumtype support
-- TODO: Fields order
-- TODO: Better error messages
+- Fields order
+- TODO: Facility to use multiple transformations consecutively
 - TODO: General type conversion
+- TODO: Better error messages
 - TODO: Specific field conversion
-- TODO: Effect type F[_] support for conversions
 - TODO: Primitive type to Tagged type / value class conversion
+- TODO: Effect type F[_] support for conversions
 - TODO: Enum support
 - TODO: Replace typetagging via .isInstanceOf by shapeless type tagging  
 - TODO: Support for recursivly defined sumtypes
