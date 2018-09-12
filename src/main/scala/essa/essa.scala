@@ -1,29 +1,37 @@
 package essa
 
-import util.transform.AlignRecursive
+import shapeless._
+import shapeless.ops.hlist.LeftFolder
+import shapeless.tag.@@
+import util.transform._
 
 object essa {
   final class ConvertPartial[B] {
-    def apply[A, NG](in: A)(implicit
-                            lngenA: LabelledNestedGeneric.Aux[A, NG],
-                            lngenB: LabelledNestedGeneric.Aux[B, NG]): B = {
+    def apply[A, NG](in: A)(
+        implicit
+        lngenA: LabelledNestedGeneric.Aux[A, NG],
+        lngenB: LabelledNestedGeneric.Aux[B, NG]
+    ): B = {
       lngenB.from(lngenA.to(in))
     }
   }
 
   def convert[Target] = new ConvertPartial[Target]
 
-  final class ConvertReorderPartial[B] {
-    def apply[A, NGA, NGB, NGResult](in: A)(
+  final class ConvertWithTransformationsPartial[Target, TransformationsType](transformations: TransformationsType) {
+    def apply[Origin, OriginNG, TargetNG, TFHead, TFTail <: HList](in: Origin)(transformations: TFHead :: TFTail)(
         implicit
-        lngenA: LabelledNestedGeneric.Aux[A, NGA],
-        lngenB: LabelledNestedGeneric.Aux[B, NGB],
-        align: AlignRecursive.Aux[NGA, NGB, NGResult],
-        lngenResult: LabelledNestedGeneric.Aux[B, NGResult]
-    ): B = {
-      lngenResult.from(align(lngenA.to(in)))
+        lngenOrigin: LabelledNestedGeneric.Aux[Origin, OriginNG],
+        lngenTarget: LabelledNestedGeneric.Aux[Target, TargetNG],
+        folder: LeftFolder.Aux[TFHead :: TFTail, (Origin, OriginNG) @@ (Target, TargetNG), TransformationsType, (Origin, TargetNG) @@ (Target, TargetNG)]
+    ): Target = {
+      val targetNG = folder(transformations, tag[(Target, TargetNG)]((in, lngenOrigin(in))))._2
+      lngenTarget.from(targetNG)
     }
   }
 
-  def convertReorder[Target] = new ConvertReorderPartial[Target]
+  def convertWithTransformations[Target] = new ConvertWithTransformationsPartial[Target, DefaultTransformations.type](DefaultTransformations)
+
+  def convertWithTransformationsCustom[Target, TransformationsType](transformations: TransformationsType) =
+    new ConvertWithTransformationsPartial[Target, TransformationsType](transformations)
 }

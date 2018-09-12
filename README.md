@@ -20,7 +20,7 @@ val b: B = convert[B](A(42, "essa"))
 - Convert arbitrary nested product types
 - Sumtype support
 - Fields order
-- TODO: Facility to use multiple transformations consecutively
+- Facility to use multiple transformations consecutively
 - TODO: General type conversion
 - TODO: Better error messages
 - TODO: Specific field conversion
