@@ -58,7 +58,7 @@ lazy val commonScalacOptions = Seq(
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3",
-  "com.lihaoyi" %% "utest" % "0.6.3" % "test"
+  "com.lihaoyi" %% "utest"     % "0.6.3" % "test"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")
