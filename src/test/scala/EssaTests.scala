@@ -19,6 +19,7 @@ object EssaTests extends TestSuite {
 
       val testee    = A()
       val result: B = convert[B](testee)
+      assert(result == B())
     }
 
     "Case classes with one field" - {
@@ -48,7 +49,7 @@ object EssaTests extends TestSuite {
       case class B2()
 
       val result: B1 = convert[B1](A1(A2()))
-      success
+      assert(result == B1(B2()))
     }
 
     "Case classes with empty sub case classes and non-generic fields" - {
